@@ -1,0 +1,125 @@
+---
+title: "Logistics Regression Class Exercise"
+author: "Dingan Chen, Justin Zipkin"
+date: "Feb 15, 2018"
+output: html_document
+---
+
+> We will do small exercise in Logistic Regression today. This will also become your submission for the day. We will do this work today in groups of two (or 3 in case of need). This will then also become your submission for the next homework. For the class submission, only one submission per team is needed - mention in comments (and in author field above) who all worked on it together. **This homework submission will be individual - although you can continue to work together in your small group**.
+
+
+## Titanic Survival Model
+
+We want to find out what factors affected passengers' survival when Titanic sank. As survival is a binary measure, this task is well suited for a Logistic Regression analysis.
+
+### Task A: Load and Explore the Data
+
+Training Data (data for building our model) is saved in the file train.csv
+
+You should import train.csv data. Check the structure of the data using str() function.
+
+- PClass: Passenger Class, Sibsp: Number of Siblings/Spouse aboard
+- Parch: Number of Parents/Children aboard
+- Are there variables that are not in the right class? If yes then convert those variables to the correct class
+
+```{r}
+#Enter your code for loading and exploring the data here.
+train=read.csv('train.csv')
+train$Pclass<-factor(train$Pclass)
+train$Survived<-factor(train$Survived)
+train$PassengerId=NULL
+train$Name=NULL
+train$CabinL=factor(substring(train$Cabin,1,1))
+train$Parch=train$Parch>0
+str(train)
+```
+
+### Task B: Build Our Model
+
+Build a logit model with Survival as the response variable. In this section, let's first build a main effects model. What variables do you need to include as the predictor variables?
+```{r}
+library(lmtest)
+library(aod)
+```
+
+```{r}
+mo=glm(Survived~Pclass+Sex+Age+Parch+SibSp+Fare+Embarked+CabinL,data=train,family = 'binomial')
+summary(mo)
+```
+
+### Task C: Improve Our Model
+
+How can we improve our model. There are several things you can try:
+
+- Do we need any interaction effects?
+- Do any of the variables have non-linear effects - should we include them in the model as a square term?
+- Can we clean the data better? Can we **infer** the missing values rather than losing all that information?
+
+Pay specific attention to how will you compare whether any particular model is **better** than other models. Potential choices are looking at the AIC value and ANOVA test for nested models.
+
+```{r}
+#Enter your code for improving your model here.
+mo2=glm(Survived~Pclass+Sex+Age+Sex*Age+Parch+SibSp+Sex*Parch+Sex*SibSp+Fare+Embarked+CabinL,data=train,family = 'binomial')
+summary(mo2)
+```
+
+What is your best model? Explain your best model - what are you seeing as significant? What is the interpretation? What does it mean?
+
+```{}
+The one with interaction seems more accurate in representing the relationship between sex and age and how they affect the survival probablity. The greater the age, both for male and female, the harder it is to survive. PClass 3 is also less likely to survive, and Cabin E is easier to survive and has a good significance.
+```
+
+### Task D: Predict Outcomes in Testing Data
+
+We have saved a small part of data to test our model. This is the **Testing Data**. We will use this data to see how good of a prediction is made by the model we created in Task D above.
+
+You should do the following:
+
+- Import the testing data in test.csv
+- Check that you have all the predictor variables. It will natually not have the response variable
+- Do any variable need recoding to match the training dataset? If yes then do the necessary variable recoding
+- Predict the Survival Probability for the Testing Dataset using the model developed on the training dataset in Step C above
+- Convert probabilities to a a binary outcome (1 for Prob > 0.5, otherwise 0)
+
+
+```{r}
+test=read.csv('test.csv')
+test$Pclass<-factor(test$Pclass)
+test$CabinL=factor(substring(test$Cabin,1,1))
+test$Parch=test$Parch>0
+str(test)
+```
+```{r}
+prec=predict(mo2,test,type='response')
+result=test
+result$Survived=ifelse(prec>=0.5,1,0)
+result$Survived[is.na(result$Survived)]=0
+toka=result[,c("PassengerId","Survived")]
+```
+
+```{r}
+write.csv(toka,"ti.csv", row.names = FALSE)
+```
+
+### Task E: Compete with Rest of the World
+
+What you just did happens to be one of the ongoing competitions at kaggle.com. https://www.kaggle.com/c/titanic has more details. Once you have predicted outcomes on the test data, you need to create a submission file that has two columns: "PasserngerID" and "Survived".
+The second column should have 1 or 0 for survived or not. NA or missing values in this field is not permitted. 
+Create an account at kaggle and upload your solution at https://www.kaggle.com/c/titanic/submit
+
+Kaggle will evaluate your submission and let you know 
+
+1. What is your score (how good is your prediction)
+2. What is your rank among all submissions 
+
+```{}
+Enter here the following:
+1. Your Kaggle Username, dinganderekchen
+2. Your Kaggle Rank, 5460
+3. What did you learn in this exercise? Summarize your experience. What can you do better given more time?
+
+I learned how to set up a logistic model to train and test the survival rate of Titanic passnegers. I think a more complicated model might give a better prediction result than logistic model. Also, a lot of the original information were thrown out, such as the passsenger cabin info. The results might be improved if tese infomation is kept in place.
+```
+
+
+> When you are done, submit you files (RMD and HTML) to Canvas for our weekly homework. Also submit you Kaggle rank and username. Lets see who in class gets the best rank on Kaggle.
